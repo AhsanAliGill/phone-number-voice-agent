@@ -1,0 +1,39 @@
+[project]
+name = "phone-agent"
+version = "0.1.0"
+description = "LiveKit voice agent that collects 10-digit Indian mobile numbers (Hindi / English / Hinglish)"
+readme = "README.md"
+authors = [
+    { name = "Ahsan462aggk", email = "ahs462agk@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.142.4",
+    "httpx>=0.28.1",
+    "livekit-agents[deepgram,groq,silero]~=1.8",
+    "livekit-api>=1.2.1",
+    "livekit-plugins-noise-cancellation>=0.3.2",
+    "numpy>=2.5.3",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.4",
+    "sqlalchemy>=2.1.4",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+phone-agent = "phone_agent.agent.worker:main"
+phone-api = "phone_agent.api.main:run"
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "src/phone_agent/parsing"]
+addopts = "--doctest-modules"
