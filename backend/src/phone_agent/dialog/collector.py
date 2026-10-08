@@ -16,7 +16,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from ..parsing import ParseError, ParseResult, classify_confirmation, parse_phone_number
+from ..parsing import (
+    ParseError,
+    ParseResult,
+    classify_confirmation,
+    is_lead_in,
+    parse_phone_number,
+)
 from ..parsing.phone_parser import Language
 from .prompts import PromptLang, is_static, render, spell_digits
 
@@ -127,6 +133,10 @@ class PhoneCollector:
             return Reply()
         count = self._current().digit_count
         if count == 0:
+            # "my number is…" and then nothing: ask for the number once
+            if self.segments:
+                self.segments.clear()
+                return self._say("ask_number")
             return Reply()
         self._reset()
         return self._say("too_few", count=count)
@@ -150,6 +160,8 @@ class PhoneCollector:
         if result.error is ParseError.NO_DIGITS:
             if result.corrected:
                 return SILENT_WAIT  # "wait, sorry..." — user is about to restart
+            if is_lead_in(transcript):
+                return SILENT_WAIT  # "my number is…" — the digits come next
             self.segments.clear()
             return self._say("ask_number")
 

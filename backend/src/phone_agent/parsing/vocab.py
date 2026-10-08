@@ -195,6 +195,16 @@ CORRECTION_MARKERS: tuple[tuple[str, ...], ...] = (
 )
 
 # ---------------------------------------------------------------------------
+# Lead-in words: "my number is…", "mera phone number…". When a turn has these
+# but no digits yet, the user is about to say the number, so the agent waits.
+# ---------------------------------------------------------------------------
+LEAD_IN_WORDS: frozenset[str] = frozenset({
+    "number", "phone", "mobile", "my", "it's", "its",
+    "mera", "meraa", "mere", "hai",
+    "नंबर", "नम्बर", "मोबाइल", "फोन", "फ़ोन", "मेरा", "मेरे", "है",
+})
+
+# ---------------------------------------------------------------------------
 # Yes / no detection for the confirmation step.
 # ---------------------------------------------------------------------------
 YES_WORDS: frozenset[str] = frozenset({

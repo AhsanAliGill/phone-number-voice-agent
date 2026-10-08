@@ -157,3 +157,25 @@ def test_english_only_tts_keeps_english_prompts_for_hindi_speakers() -> None:
     assert reply.text.startswith("Let me confirm")
     assert "nine, eight" in reply.text
     assert c.on_user_turn("haan").save.language == "hi"  # still recorded as Hindi
+
+
+def test_lead_in_phrase_waits_for_digits() -> None:
+    c = PhoneCollector()
+    for lead_in in ("मेरा phone number", "my number is", "mera number hai"):
+        c = PhoneCollector()
+        reply = c.on_user_turn(lead_in)
+        assert reply.text is None and reply.wait_for_more
+    reply = c.on_user_turn("nine eight seven six five four three two one zero")
+    assert c.state is State.CONFIRMING
+    assert c.candidate.digits == "9876543210"
+
+
+def test_lead_in_then_silence_asks_for_number_once() -> None:
+    c = PhoneCollector()
+    c.on_user_turn("my number is")
+    assert c.on_silence_timeout().text == "Please tell me your 10-digit mobile number."
+    assert c.on_silence_timeout().text is None  # doesn't nag repeatedly
+
+
+def test_greeting_without_lead_in_still_reprompts() -> None:
+    assert PhoneCollector().on_user_turn("Hi.").text == "Please tell me your 10-digit mobile number."

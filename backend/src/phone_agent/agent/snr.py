@@ -4,9 +4,14 @@ The meter sits *after* noise suppression (it wraps ``Agent.stt_node``), so it
 measures the residual noise the STT will actually hear. It needs no extra
 model: frame levels are tracked in dBFS and
 
-    noise floor = low percentile of all frame levels over a long window
-    speech level = high percentile of frame levels during the current turn
+    noise floor  = low percentile of all frame levels over a long window
+    speech level = mean of the loudest ~300 ms of the current turn
     SNR          = speech level - noise floor
+
+The speech level deliberately does not use a percentile of the whole turn:
+a turn's buffer includes the silence before the user spoke (often >90 % of
+the frames after a long pause), which would drag a percentile down to the
+noise floor and report SNR = 0 for perfectly clean speech.
 
 When suppression works, the floor is very low and the SNR is high. When noise
 leaks through (loud chatter, clipping, a bad mic) the SNR drops and the
@@ -35,27 +40,35 @@ class SnrMeter:
     def __init__(
         self,
         *,
-        noise_window_frames: int = 1500,  # ~15 s of 10 ms frames
+        noise_window_s: float = 15.0,
         noise_percentile: float = 10.0,
-        speech_percentile: float = 90.0,
-        min_turn_frames: int = 10,
+        speech_window_s: float = 0.3,
+        min_turn_s: float = 0.2,
     ) -> None:
-        self._history: deque[float] = deque(maxlen=noise_window_frames)
+        self._noise_window_s = noise_window_s
+        self._history: deque[float] = deque()
         self._turn: list[float] = []
+        self._frame_s = 0.01  # updated from the frames we actually receive
         self._noise_pct = noise_percentile
-        self._speech_pct = speech_percentile
-        self._min_turn_frames = min_turn_frames
+        self._speech_window_s = speech_window_s
+        self._min_turn_s = min_turn_s
 
     def push(self, frame: rtc.AudioFrame) -> None:
+        if frame.sample_rate:
+            self._frame_s = frame.samples_per_channel / frame.sample_rate
         level = frame_level_db(frame)
         self._history.append(level)
+        while len(self._history) * self._frame_s > self._noise_window_s:
+            self._history.popleft()
         self._turn.append(level)
 
     def consume_turn_snr(self) -> float | None:
         """Return the SNR (dB) of audio since the last call, then reset."""
         turn, self._turn = self._turn, []
-        if len(turn) < self._min_turn_frames or len(self._history) < self._min_turn_frames:
+        min_frames = max(1, round(self._min_turn_s / self._frame_s))
+        if len(turn) < min_frames or len(self._history) < min_frames:
             return None
         noise_floor = float(np.percentile(self._history, self._noise_pct))
-        speech_level = float(np.percentile(turn, self._speech_pct))
+        loudest = max(1, round(self._speech_window_s / self._frame_s))
+        speech_level = float(np.mean(np.sort(turn)[-loudest:]))
         return speech_level - noise_floor

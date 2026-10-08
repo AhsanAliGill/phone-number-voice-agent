@@ -29,6 +29,7 @@ from .vocab import (
     EN_TENS,
     HI,
     HUNDRED_WORDS,
+    LEAD_IN_WORDS,
     MULTIPLIERS,
     NO_WORDS,
     NUMBER_WORDS,
@@ -275,6 +276,11 @@ def parse_phone_number(transcript: str, *, fallback_language: Language = "en") -
 
 # Alias matching the name used in the assignment brief.
 parsePhoneNumber = parse_phone_number
+
+
+def is_lead_in(transcript: str) -> bool:
+    """True for "my number is…" / "mera phone number…" style openers."""
+    return bool(set(_tokenize(transcript)) & LEAD_IN_WORDS)
 
 
 def classify_confirmation(transcript: str) -> Literal["yes", "no", "unclear"]:
