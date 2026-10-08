@@ -11,6 +11,12 @@ A voice agent built on **LiveKit Agents** that collects a **10-digit Indian mobi
 
 The number parsing is **deterministic, with no LLM**. Every number is read back digit by digit, and only confirmed, valid numbers are saved.
 
+## Demo video
+
+[![Watch the demo on Vimeo](https://i.vimeocdn.com/video/2209779797-d5bceee7f9f30d868ac25e503614487127b9871d7a255f904a7b149afcc3c437-d_1280?region=us)](https://vimeo.com/1233953389)
+
+▶️ **[Watch the demo on Vimeo](https://vimeo.com/1233953389)**
+
 ## Repository layout
 
 ```
